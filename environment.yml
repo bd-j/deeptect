@@ -1,0 +1,30 @@
+name: dtect
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  # :Infrastructure:
+  - pip >= 19.0
+  - pep8
+  - pylint
+  - pycodestyle
+  - ipython
+  - jupyterlab
+  - pyyaml
+  # :Scientific computing:
+  - numpy >= 1.14
+  - scipy >= 1.1.0
+  - matplotlib
+  - h5py
+  - asdf
+  # :Astro:
+  - astropy
+  - galsim
+  - sep
+  - photutils
+  # :AI:
+  - pip:
+    - numpyro
+    - tensorflow
+  # Optional extra:
+  - arviz
