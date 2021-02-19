@@ -16,15 +16,15 @@ dependencies:
   - scipy >= 1.1.0
   - matplotlib
   - h5py
-  - asdf
+  #- asdf
   # :Astro:
   - astropy
   - galsim
-  - sep
-  - photutils
+  #- sep
+  #- photutils
   # :AI:
   - pip:
-    - numpyro
-    - tensorflow
+   # - numpyro
+    - tensorflow==2.2
   # Optional extra:
-  - arviz
+  #- arviz
