@@ -13,15 +13,23 @@ from tensorflow.keras import layers
 from tensorflow.keras.models import Model, Sequential
 
 
-def decimate(full, nside):
+def split(full, nside, everypixel=False):
+    """Split an image into square tiles.  These can either be non-overlapping or centered on every input pixel.
+
+    TODO: deal with images with dimensions that are non-integer multiples of the stamp size
+    """
     from numpy.lib.stride_tricks import as_strided
     bs = full.itemsize
     sx, sy = full.shape
     assert np.mod(sx, nside) == 0
     assert np.mod(sy, nside) == 0
     nx, ny = sx // nside, sy // nside
-    s = as_strided(full, shape=(nside, nside, nx * ny),
-                   strides=(bs*sy, bs, bs*nside))
+    if everypixel:
+        s = as_strided(full, shape=(nside, nside, sx * sy),
+                       strides=(bs*sy, bs, bs))
+    else:
+        s = as_strided(full, shape=(nside, nside, nx * ny),
+                       strides=(bs*sy, bs, bs*nside))
     return s
 
 
@@ -32,10 +40,9 @@ def prep_data(files, nside=64):
         noise = fits.getdata(f, 1)
         snr = signal / noise
 
-        stamps = decimate(snr, nside)
+        stamps = split(snr, nside)
         channel.append(stamps.T)
     return np.array(channel)
-
 
 
 def build_model(nside=64, training=True):
