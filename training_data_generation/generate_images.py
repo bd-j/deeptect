@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-make_test_image.py - 
+make_test_image.py -
 Use galsim to generate some images that can be used for training
 and testing. Largely adopated from Ben Johnson's make_test_image.py.
 These will be single band images. The images include
@@ -35,29 +35,45 @@ def read_config(config_file):
     return config
 
 
+def make_truncnorm(min=0, max=1, mu=0, sigma=1, **extras):
+    a = (min - mu) / sigma
+    b = (max - mu) / sigma
+    return stats.truncnorm(a, b, loc=mu, scale=sigma)
+
+
 def draw_sources(config):
     '''
     Draw galaxy parameter
     '''
     source_dict = {}
     # draw number of galaxies
-    number_obj_fct = stats.truncnorm((config.sources['number']['min'] - config.sources['number']['mu']) / config.sources['number']['sigma'], (config.sources['number']['max'] - config.sources['number']['mu']) / config.sources['number']['sigma'], loc=config.sources['number']['mu'], scale=config.sources['number']['sigma'])
+    number_obj_fct = make_truncnorm(**config.sources["number"])
     number_obj = int(number_obj_fct.rvs(1))
+
     # draw SNR from powerlaw
-    snr_list = powerlaw.Power_Law(xmin=config.sources['snr']['min'], parameters=[config.sources['snr']['powerlaw_index']]).generate_random(number_obj)
-    source_dict['snr'] = np.clip(snr_list, config.sources['snr']['min'], config.sources['snr']['max'])
+    snr_list = powerlaw.Power_Law(xmin=config.sources['snr']['min'],
+                                  parameters=[config.sources['snr']['powerlaw_index']]).generate_random(number_obj)
+    source_dict['snr'] = np.clip(snr_list, config.sources['snr']['min'],
+                                 config.sources['snr']['max'])
+
     # draw size in arcsec
-    log_size_arcsec_fct = stats.truncnorm((config.sources['log_size']['min'] - config.sources['log_size']['mu']) / config.sources['log_size']['sigma'], (config.sources['log_size']['max'] - config.sources['log_size']['mu']) / config.sources['log_size']['sigma'], loc=config.sources['log_size']['mu'], scale=config.sources['log_size']['sigma'])
+    log_size_arcsec_fct = make_truncnorm(**config.sources["log_size"])
     size_arcsec_list = np.power(10, log_size_arcsec_fct.rvs(number_obj))
     source_dict['rhalf'] = size_arcsec_list
+
     # draw Sersic index
-    sersic_fct = stats.truncnorm((np.clip(config.sources['sersic']['min'], 0.3, 6.2) - config.sources['sersic']['mu']) / config.sources['sersic']['sigma'], (np.clip(config.sources['sersic']['max'], 0.3, 6.2) - config.sources['sersic']['mu']) / config.sources['sersic']['sigma'], loc=config.sources['sersic']['mu'], scale=config.sources['sersic']['sigma'])
+    config.sources["sersic"]["min"] = max(0.3, config.sources["sersic"]["min"])
+    config.sources["sersic"]["min"] = min(6.2, config.sources["sersic"]["max"])
+    sersic_fct = make_truncnorm(**config.sources["sersic"])
     sersic_list = sersic_fct.rvs(number_obj)
-    source_dict['sersic'] = np.clip(sersic_list, config.sources['sersic']['min'], config.sources['sersic']['max'])
+    source_dict['sersic'] = np.clip(sersic_list, config.sources['sersic']['min'],
+                                    config.sources['sersic']['max'])
+
     # draw axis ratio
-    q_fct = stats.truncnorm((config.sources['q']['min'] - config.sources['q']['mu']) / config.sources['q']['sigma'], (config.sources['q']['max'] - config.sources['q']['mu']) / config.sources['q']['sigma'], loc=config.sources['q']['mu'], scale=config.sources['q']['sigma'])
+    q_fct = make_truncnorm(**config.sources["q"])
     q_list = q_fct.rvs(number_obj)
     source_dict['q'] = q_list
+
     return(number_obj, source_dict)
 
 
@@ -102,20 +118,20 @@ def make_header(config, idx_band):
     '''
     Generate header.
     '''
-    pixel_scale = conf.frames[idx_band]['scale']
+    pixel_scale = config.frames[idx_band]['scale']
     header = {}
     header["CRPIX1"] = 0.0
     header["CRPIX2"] = 0.0
     header["CRVAL1"] = config.ra
     header["CRVAL2"] = config.dec
-    header["CD1_1"] = -conf.frames[idx_band]['scale'] / 3600.
-    header["CD2_2"] = conf.frames[idx_band]['scale'] / 3600.
+    header["CD1_1"] = -config.frames[idx_band]['scale'] / 3600.
+    header["CD2_2"] = config.frames[idx_band]['scale'] / 3600.
     header["CD1_2"] = 0.0
     header["CD2_1"] = 0.0
-    header["FILTER"] = conf.frames[idx_band]['band']
-    header["NOISE"] = conf.frames[idx_band]['noise']
-    header["PSFSIGMA"] = conf.frames[idx_band]['fwhm']
-    header["PIXSCALE"] = conf.frames[idx_band]['scale']
+    header["FILTER"] = config.frames[idx_band]['band']
+    header["NOISE"] = config.frames[idx_band]['noise']
+    header["PSFSIGMA"] = config.frames[idx_band]['fwhm']
+    header["PIXSCALE"] = config.frames[idx_band]['scale']
     wcs = WCS(header)
     return header, wcs
 
@@ -182,7 +198,7 @@ if __name__ == "__main__":
     noiseless = im.copy().array[int(n_pix_per_gal):-int(n_pix_per_gal), int(n_pix_per_gal):-int(n_pix_per_gal)]
     im.addNoise(galsim.GaussianNoise(sigma=conf.frames[0]['noise']))
     noisy = im.copy().array[int(n_pix_per_gal):-int(n_pix_per_gal), int(n_pix_per_gal):-int(n_pix_per_gal)]
-    
+
     # convert to image x, y
     cat["x"] -= n_pix_per_gal
     cat["y"] -= n_pix_per_gal
@@ -207,4 +223,3 @@ if __name__ == "__main__":
     filename = args.output_dir + conf.name + "_{}.fits".format(args.counter)
     write_im(filename, header, noisy, noiseless, uncertainty, truth, cat)
     print("successfully wrote image to", filename)
-
