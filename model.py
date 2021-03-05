@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import time
 import numpy as np
 #import matplotlib.pyplot as pl
 
@@ -10,7 +11,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Model, Sequential
 
-
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 
 def build_model(nside=64, training=True):
@@ -29,6 +30,33 @@ def build_model(nside=64, training=True):
     deeptect = Model(inputs=inputs, outputs=outputs)
 
     return deeptect
+
+
+def train_model(model, train_X, train_Y, test_X, test_Y,
+                epochs=50, save_loc="./weights.h5"):
+
+    es = EarlyStopping(monitor='val_loss', patience=5)
+    weight_save_callback = ModelCheckpoint(save_loc, monitor='val_loss', verbose=0,
+                                           save_best_only=True, mode='auto')
+    print(weight_save_callback)
+
+    #adadelta = keras.optimizers.adadelta(lr=1.0, decay=0.0, rho=0.99)
+    model.compile(optimizer=keras.optimizers.Adam(1e-3),
+                  loss='binary_crossentropy')
+
+    start = time.time()
+    out = model.fit(train_X, train_Y,
+                    epochs=epochs, batch_size=128, shuffle=True,
+                    validation_data=(test_X, test_Y),
+                    callbacks=[es, weight_save_callback])
+    end = time.time()
+    print(end-start)
+
+    loss = out.history['loss']
+    val_loss = out.history['val_loss']
+    epochs = range(len(loss))
+
+    return out
 
 
 class DeepTect(keras.models.Model):

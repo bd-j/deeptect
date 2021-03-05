@@ -30,34 +30,34 @@ def split(full, nside, everypixel=False):
     return s
 
 
-def prep_data_x(files, nside=64):
+def prep_data_x(files, n_side=64):
     channel = []
     for f in files:
         signal = fits.getdata(f, 1)
         noise = fits.getdata(f, 3)
         snr = signal / noise
 
-        stamps = split(snr, nside)
+        stamps = split(snr, n_side)
         channel.append(stamps.T)
     return np.array(channel).astype(np.float32)
 
 
-def prep_data_y(files, nside=64):
+def prep_data_y(files, n_side=64):
     channel = []
     for f in files:
         truth = fits.getdata(f, 4)
-        stamps = split(truth, nside)
+        stamps = split(truth, n_side)
         channel.append(stamps.T)
     return np.array(channel).astype(np.float32)
 
 
-def training_data(files, nside=64):
+def training_data(files, n_side=64):
 
-    X = prep_data_x(files, nside=nside)
-    Y = prep_data_y(files, nside=nside)
+    X = prep_data_x(files, n_side=n_side)
+    Y = prep_data_y(files, n_side=n_side)
 
-    train_X = X.reshape((-1, nside, nside))
-    train_Y = Y.reshape((-1, nside, nside))
+    train_X = X.reshape((-1, n_side, n_side))
+    train_Y = Y.reshape((-1, n_side, n_side))
 
     return train_X, train_Y
 
