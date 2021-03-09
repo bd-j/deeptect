@@ -10,6 +10,19 @@ from model import build_model, train_model
 from data import training_data
 
 
+def show_pred(ind, val_X, val_Y, pred_Y):
+    import matplotlib.pyplot as pl
+    pl.ion()
+    fig, axes = pl.subplots(2, 2)
+    ax = axes.flat[0]
+    ax.imshow(val_X[ind].T)
+    ax = axes.flat[1]
+    ax.imshow(val_Y[ind].T)
+    ax = axes.flat[3]
+    ax.imshow(pred_Y[ind, :, :, 0].T)
+    return fig, axes
+
+
 if __name__ == "__main__":
 
     config = argparse.Namespace()
@@ -29,3 +42,8 @@ if __name__ == "__main__":
     deeptect = build_model(config.n_side)
 
     history = train_model(deeptect, train_X, train_Y, test_X, test_Y)
+
+    start, stop = (config.n_train + config.n_test), (config.n_train + config.n_test + 5)
+    val_ims = files[start:stop]
+    val_X, val_Y = training_data(val_ims, n_side=config.n_side)
+    pred_Y = deeptect.predict_on_batch(val_ims)
