@@ -13,6 +13,30 @@ from tensorflow.keras.models import Model, Sequential
 
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
+from focal_loss import BinaryFocalLoss
+
+
+class FocalLoss(tf.losses.Loss):
+    """Implements Focal loss
+    Has shape issues"""
+
+    def __init__(self, alpha=0.25, gamma=2.0):
+        super(FocalLoss, self).__init__(
+            reduction="none", name="RetinaNetClassificationLoss"
+        )
+        self._alpha = alpha
+        self._gamma = gamma
+
+    def call(self, y_true, y_pred):
+        cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(
+            labels=y_true, logits=y_pred
+        )
+        probs = tf.nn.sigmoid(y_pred)
+        alpha = tf.where(tf.equal(y_true, 1.0), self._alpha, (1.0 - self._alpha))
+        pt = tf.where(tf.equal(y_true, 1.0), probs, 1 - probs)
+        loss = alpha * tf.pow(1.0 - pt, self._gamma) * cross_entropy
+        return tf.reduce_sum(loss, axis=-1)
+
 
 def build_model(nside=64, training=True):
     """Build model functionally
@@ -21,10 +45,13 @@ def build_model(nside=64, training=True):
     conv_kwargs = dict(strides=1, activation="relu",
                        padding="same")
 
-    x = layers.Conv2D(16, 8, **conv_kwargs)(inputs)
-    x = layers.Dropout(0.25)(x, training=training)
-    x = layers.Conv2D(32, 4, **conv_kwargs)(x)
-    x = layers.Conv2D(64, 2, **conv_kwargs)(x)
+    x = layers.Conv2D(16, 9, **conv_kwargs)(inputs)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dropout(0.25)(x)
+    x = layers.Conv2D(32, 5, **conv_kwargs)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Conv2D(64, 3, **conv_kwargs)(x)
+    x = layers.BatchNormalization()(x)
     outputs = layers.Dense(1, activation="sigmoid")(x)
 
     deeptect = Model(inputs=inputs, outputs=outputs)
@@ -42,11 +69,12 @@ def train_model(model, train_X, train_Y, test_X, test_Y,
 
     #adadelta = keras.optimizers.adadelta(lr=1.0, decay=0.0, rho=0.99)
     model.compile(optimizer=keras.optimizers.Adam(1e-3),
-                  loss='binary_crossentropy')
+                  loss=BinaryFocalLoss(gamma=4),
+                  metrics=['binary_accuracy'])
 
     start = time.time()
     out = model.fit(train_X, train_Y,
-                    epochs=epochs, batch_size=128, shuffle=True,
+                    epochs=epochs, batch_size=256, shuffle=True,
                     validation_data=(test_X, test_Y),
                     callbacks=[es, weight_save_callback])
     end = time.time()

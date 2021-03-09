@@ -42,24 +42,29 @@ def prep_data_x(files, n_side=64):
     return np.array(channel).astype(np.float32)
 
 
-def prep_data_y(files, n_side=64):
+def prep_data_y(files, n_side=64, snr_limit=10):
     channel = []
     for f in files:
         truth = fits.getdata(f, 4)
+        cat = fits.getdata(f, 5)
+        bad = cat["snr"] < snr_limit
+        xg, yg = cat[bad]["x"], cat[bad]["y"]
+        for x, y in zip(xg, yg):
+            truth[int(y), int(x)] = 0
         stamps = split(truth, n_side)
         channel.append(stamps.T)
     return np.array(channel).astype(np.float32)
 
 
-def training_data(files, n_side=64):
+def training_data(files, n_side=64, snr_limit=10):
 
     X = prep_data_x(files, n_side=n_side)
-    Y = prep_data_y(files, n_side=n_side)
+    Y = prep_data_y(files, n_side=n_side, snr_limit=snr_limit)
 
     train_X = X.reshape((-1, n_side, n_side))
     train_Y = Y.reshape((-1, n_side, n_side))
 
-    return train_X, train_Y
+    return train_X[:, :, :, None], train_Y[:, :, :, None]
 
 
 if __name__ == "__main__":

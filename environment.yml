@@ -27,5 +27,6 @@ dependencies:
   - pip:
    # - numpyro
     - tensorflow==2.2
+    - focal_loss
   # Optional extra:
   #- arviz
