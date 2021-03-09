@@ -24,4 +24,4 @@ source activate dtect
 srun -n 1 python /n/eisenstein_lab/Everyone/jades/deeptect/training_data_generation/generate_images.py \
 --counter="${SLURM_ARRAY_TASK_ID}" \
 --config_file="/n/eisenstein_lab/Everyone/jades/deeptect/training_data_generation/config.yml" \
---output_dir="/n/eisenstein_lab/Everyone/jades/deeptect/data/training_data_20210305/"
+--output_dir="/n/eisenstein_lab/Everyone/jades/deeptect/data/training_data_20210309/"

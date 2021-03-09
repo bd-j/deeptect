@@ -63,7 +63,7 @@ def draw_sources(config):
 
     # draw Sersic index
     config.sources["sersic"]["min"] = max(0.3, config.sources["sersic"]["min"])
-    config.sources["sersic"]["min"] = min(6.2, config.sources["sersic"]["max"])
+    config.sources["sersic"]["max"] = min(6.2, config.sources["sersic"]["max"])
     sersic_fct = make_truncnorm(**config.sources["sersic"])
     sersic_list = sersic_fct.rvs(number_obj)
     source_dict['sersic'] = np.clip(sersic_list, config.sources['sersic']['min'],
@@ -89,7 +89,7 @@ def make_catalog(grid_points, n_gal, band="fclear", pixel_scale=0.03, noise=1.0)
         cat[k] = grid_points[k]
     n_pix = np.pi * (cat["rhalf"] / pixel_scale)**2
     cat[band] = 2 * cat["snr"] * np.sqrt(n_pix) * noise
-    cat["pa"] = np.random.uniform(low=0.0, high=0.5*np.pi, size=(n_gal))
+    cat["pa"] = np.random.uniform(low=-0.5*np.pi, high=0.5*np.pi, size=(n_gal))
     return cat
 
 
