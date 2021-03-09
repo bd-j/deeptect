@@ -45,12 +45,12 @@ def build_model(nside=64, training=True):
     conv_kwargs = dict(strides=1, activation="relu",
                        padding="same")
 
-    x = layers.Conv2D(16, 9, **conv_kwargs)(inputs)
+    x = layers.SeparableConv2D(16, 9, **conv_kwargs)(inputs)
     x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
-    x = layers.Conv2D(32, 5, **conv_kwargs)(x)
+    x = layers.SeparableConv2D(32, 5, **conv_kwargs)(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Conv2D(64, 3, **conv_kwargs)(x)
+    x = layers.SeparableConv2D(64, 3, **conv_kwargs)(x)
     x = layers.BatchNormalization()(x)
     outputs = layers.Dense(1, activation="sigmoid")(x)
 
@@ -69,12 +69,12 @@ def train_model(model, train_X, train_Y, test_X, test_Y,
 
     #adadelta = keras.optimizers.adadelta(lr=1.0, decay=0.0, rho=0.99)
     model.compile(optimizer=keras.optimizers.Adam(1e-3),
-                  loss=BinaryFocalLoss(gamma=4),
+                  loss=BinaryFocalLoss(gamma=2),
                   metrics=['binary_accuracy'])
 
     start = time.time()
     out = model.fit(train_X, train_Y,
-                    epochs=epochs, batch_size=256, shuffle=True,
+                    epochs=epochs, batch_size=128, shuffle=True,
                     validation_data=(test_X, test_Y),
                     callbacks=[es, weight_save_callback])
     end = time.time()

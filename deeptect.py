@@ -28,27 +28,30 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", type=str,
-                        default="./data/training_data_20210305")
-    parser.add_argument("--nside", type=int, default=128)
-    parser.add_argument("--ntrain", type=int, default=100)
-    parser.add_argument("--n_test", type=int, defailt=20)
-    parser.add_argument("--epochs", type=int, defailt=20)
+                        default="./data/training_data_20210309")
+    parser.add_argument("--n_side", type=int, default=128)
+    parser.add_argument("--n_train", type=int, default=100)
+    parser.add_argument("--frac_test", type=float, default=0.2)
+    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--block", type=int, default=1)
     parser.add_argument("--snr_limit", type=int, default=10)
     parser.add_argument("--renorm", action="store_true")
+    parser.add_argument("--no_training", action="store_true")
     config = parser.parse_args()
+    config.n_test = int(config.n_train * config.frac_test)
 
-    search = os.path.join(config.data_dir, "training_data_*3*fits")
+    search = os.path.join(config.data_dir, "training_data_*fits")
 
     files = glob.glob(search)
     train_ims = files[:config.n_train]
     test_ims = files[config.n_train:(config.n_train + config.n_test)]
     train_X, train_Y = training_data(train_ims, n_side=config.n_side,
-                                     snr_limit=config.snr_limit)
+                                     snr_limit=config.snr_limit, block=config.block)
     test_X, test_Y = training_data(test_ims, n_side=config.n_side,
-                                   snr_limit=config.snr_limit)
+                                   snr_limit=config.snr_limit, block=config.block)
 
     if config.renorm:
-        scale = train_X.max()
+        scale = train_X.mean()
         print(f"scale = {scale}")
     else:
         scale = 1.0
@@ -56,9 +59,10 @@ if __name__ == "__main__":
     train_X /= scale
     test_X /= scale
 
-    deeptect = build_model(config.n_side)
+    deeptect = build_model(config.n_side // config.block)
 
-    #sys.exit()
+    if config.no_training:
+        sys.exit()
 
     history = train_model(deeptect, train_X, train_Y, test_X, test_Y,
                           epochs=config.epochs)
@@ -66,7 +70,7 @@ if __name__ == "__main__":
     start, stop = (config.n_train + config.n_test), (config.n_train + config.n_test + 10)
     val_ims = files[start:stop]
     val_X, val_Y = training_data(val_ims, n_side=config.n_side,
-                                 snr_limit=config.snr_limit)
+                                 snr_limit=config.snr_limit, block=config.block)
     val_X /= scale
     pred_Y = deeptect.predict_on_batch(val_X)
 

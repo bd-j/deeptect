@@ -21,6 +21,7 @@ dependencies:
   # :Astro:
   - astropy
   - galsim
+  - scikit-image
   #- sep
   #- photutils
   # :AI:
