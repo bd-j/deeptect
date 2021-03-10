@@ -51,6 +51,7 @@ def prep_data_x(files, n_side=64, block=1):
 
         stamps = split(snr, n_side, block=block)
         channel.append(stamps.T)
+
     return np.array(channel).astype(np.float32)
 
 
